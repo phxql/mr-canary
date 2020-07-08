@@ -61,6 +61,10 @@ public class FrontendHandler extends ChannelInboundHandlerAdapter {
 
         if (backendChannel.isActive()) {
             // Write data from frontend to backend
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("[{}] Proxying {} bytes from frontend to backend", id, Helper.bufferSize(msg));
+            }
+
             backendChannel.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
                 if (future.isSuccess()) {
                     // Read more from frontend, triggers channelRead() again
