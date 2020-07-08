@@ -22,6 +22,7 @@ public final class Main {
             new Main().run(args);
         } catch (Exception e) {
             LOGGER.error("Unhandled exception, please report this as a bug", e);
+            System.exit(1);
         } finally {
             LOGGER.info("Stopped");
         }
