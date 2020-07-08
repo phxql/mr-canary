@@ -8,9 +8,13 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+
 @Slf4j
-public class Main {
-    private static final int PORT = 8080;
+public final class Main {
+    private static final int LOCAL_PORT = 8080;
+    private static final SocketAddress BACKEND = new InetSocketAddress("www.mkammerer.de", 443);
 
     public static void main(String[] args) {
         LOGGER.info("Started");
@@ -24,25 +28,22 @@ public class Main {
     }
 
     private void run(String[] args) throws InterruptedException {
-        EventLoopGroup bossGroup = new NioEventLoopGroup();
+        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
-
         try {
             ServerBootstrap bootstrap = new ServerBootstrap();
-            bootstrap.group(bossGroup)
+            ChannelFuture future = bootstrap.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
-                .childHandler(new ClientChannelInitializer())
-                .option(ChannelOption.SO_BACKLOG, 128)
-                .childOption(ChannelOption.SO_KEEPALIVE, true);
+                .childHandler(new ReverseProxyInitializer(BACKEND))
+                .childOption(ChannelOption.AUTO_READ, false)
+                .bind(LOCAL_PORT).sync();
 
-            LOGGER.debug("Binding to port {} ...", PORT);
-            ChannelFuture bind = bootstrap.bind(PORT).sync();
-            LOGGER.info("Running on port {}", PORT);
+            LOGGER.info("Running on port {}", LOCAL_PORT);
 
-            bind.channel().closeFuture().sync();
+            future.channel().closeFuture().sync();
         } finally {
-            workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
+            workerGroup.shutdownGracefully();
         }
     }
 }
