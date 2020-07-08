@@ -2,7 +2,6 @@
 
 A reverse proxy with canaries built in.
 
-
 ## Building
 
 Run `./mvnw clean package` and check the `target` folder.
