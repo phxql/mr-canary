@@ -6,6 +6,7 @@ import de.mkammerer.mrcanary.configuration.ConfigurationLoader;
 import de.mkammerer.mrcanary.configuration.GlobalConfiguration;
 import de.mkammerer.mrcanary.configuration.impl.TomlConfigurationLoader;
 import de.mkammerer.mrcanary.netty.ReverseProxyInitializer;
+import de.mkammerer.mrcanary.netty.admin.AdminInitializer;
 import de.mkammerer.mrcanary.prometheus.Prometheus;
 import de.mkammerer.mrcanary.prometheus.impl.PrometheusMock;
 import de.mkammerer.mrcanary.util.NamedThreadFactory;
@@ -18,6 +19,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -56,8 +58,13 @@ public final class Main {
             CanaryManager canaryManager = CanaryManager.fromConfiguration(globalConfiguration.getCanaries(), scheduler, prometheus);
 
             List<ChannelFuture> futures = new ArrayList<>(globalConfiguration.getCanaries().size());
+
+            // Add admin ports
+            futures.add(startNettyForAdmin(bossGroup, workerGroup, globalConfiguration.getAdminAddress()));
+
+            // Add canary ports
             for (Canary canary : canaryManager.getCanaries()) {
-                futures.add(startNetty(bossGroup, workerGroup, canary));
+                futures.add(startNettyForCanary(bossGroup, workerGroup, canary));
             }
 
             // Wait for all channels to close - this will not happen unless process is being killed
@@ -71,7 +78,18 @@ public final class Main {
         }
     }
 
-    private ChannelFuture startNetty(EventLoopGroup bossGroup, EventLoopGroup workerGroup, Canary canary) throws InterruptedException {
+    private ChannelFuture startNettyForAdmin(EventLoopGroup bossGroup, EventLoopGroup workerGroup, InetSocketAddress adminAddress) throws InterruptedException {
+        LOGGER.info("Starting admin interface on {}", adminAddress);
+
+        ServerBootstrap bootstrap = new ServerBootstrap();
+
+        return bootstrap.group(bossGroup, workerGroup)
+            .channel(NioServerSocketChannel.class)
+            .childHandler(new AdminInitializer())
+            .bind(adminAddress).sync();
+    }
+
+    private ChannelFuture startNettyForCanary(EventLoopGroup bossGroup, EventLoopGroup workerGroup, Canary canary) throws InterruptedException {
         LOGGER.info("Starting canary '{}' on port {} ...", canary.getName(), canary.getPort());
 
         ServerBootstrap bootstrap = new ServerBootstrap();
