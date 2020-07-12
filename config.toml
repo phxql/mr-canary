@@ -1,3 +1,4 @@
 # Global configuration
 
 canaries_directory = "config"
+admin_address = "127.0.0.1:8888"

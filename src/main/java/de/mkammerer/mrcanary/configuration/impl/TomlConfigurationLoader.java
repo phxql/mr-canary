@@ -31,9 +31,10 @@ public class TomlConfigurationLoader implements ConfigurationLoader {
 
         Toml toml = new Toml().read(configFile.toFile());
         Path canariesDirectory = Paths.get(toml.getString("canaries_directory")).toAbsolutePath();
+        InetSocketAddress adminAddress = parseAddress(toml.getString("admin_address"));
         List<CanaryConfiguration> canaries = loadCanariesConfig(canariesDirectory);
 
-        return new GlobalConfiguration(canariesDirectory, canaries);
+        return new GlobalConfiguration(canariesDirectory, adminAddress, canaries);
     }
 
     private List<CanaryConfiguration> loadCanariesConfig(Path canariesDirectory) {
