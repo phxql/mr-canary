@@ -4,6 +4,7 @@ import de.mkammerer.mrcanary.configuration.CanaryConfiguration;
 import de.mkammerer.mrcanary.configuration.ConfigurationLoader;
 import de.mkammerer.mrcanary.configuration.GlobalConfiguration;
 import de.mkammerer.mrcanary.configuration.impl.TomlConfigurationLoader;
+import de.mkammerer.mrcanary.netty.ReverseProxyInitializer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;

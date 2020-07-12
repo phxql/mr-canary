@@ -1,4 +1,4 @@
-package de.mkammerer.mrcanary;
+package de.mkammerer.mrcanary.netty;
 
 import de.mkammerer.mrcanary.configuration.CanaryConfiguration;
 import io.netty.channel.ChannelInitializer;

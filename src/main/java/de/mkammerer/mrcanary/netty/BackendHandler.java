@@ -1,4 +1,4 @@
-package de.mkammerer.mrcanary;
+package de.mkammerer.mrcanary.netty;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
@@ -23,7 +23,7 @@ public class BackendHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(final ChannelHandlerContext ctx, Object msg) {
         // Write data from backend to frontend
         if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("[{}] Proxying {} bytes from backend to frontend", id, Helper.bufferSize(msg));
+            LOGGER.trace("[{}] Proxying {} bytes from backend to frontend", id, NettyHelper.bufferSize(msg));
         }
 
         frontendChannel.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
@@ -40,12 +40,12 @@ public class BackendHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         LOGGER.debug("[{}] Disconnecting frontend", id);
-        Helper.flushAndClose(frontendChannel);
+        NettyHelper.flushAndClose(frontendChannel);
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         LOGGER.warn("[{}] Unhandled exception", id, cause);
-        Helper.flushAndClose(ctx.channel());
+        NettyHelper.flushAndClose(ctx.channel());
     }
 }
