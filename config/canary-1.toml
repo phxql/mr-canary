@@ -3,14 +3,14 @@ name = "Test Canary #1"
 port = 8080
 primary_address = "127.0.0.1:2020"
 canary_address = "127.0.0.1:3030"
-max_failures = 0
-analysis_interval = "PT1M"
+max_failures = 3
+analysis_interval = "PT3S"
 
 [prometheus]
 query = "TODO"
 max = 10
 
 [weight]
-start = 50
+start = 0
 end = 100
 increase = 10

@@ -1,12 +1,16 @@
 package de.mkammerer.mrcanary.canary;
 
 import de.mkammerer.mrcanary.configuration.CanaryConfiguration;
+import de.mkammerer.mrcanary.prometheus.Prometheus;
+import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+@Slf4j
 public class Canary {
     private final AtomicReference<Status> status = new AtomicReference<>(Status.RUNNING);
     /**
@@ -16,9 +20,11 @@ public class Canary {
     private final AtomicInteger failures = new AtomicInteger(0);
 
     private final CanaryConfiguration configuration;
+    private final Prometheus prometheus;
 
-    public Canary(CanaryConfiguration configuration) {
+    public Canary(CanaryConfiguration configuration, Prometheus prometheus) {
         this.configuration = configuration;
+        this.prometheus = prometheus;
 
         // Initialize to start weight
         canaryWeight.set(configuration.getWeight().getStart());
@@ -54,6 +60,57 @@ public class Canary {
         return configuration.getPrimaryAddress();
     }
 
+    public boolean needAnalyze() {
+        return status.get() == Status.RUNNING;
+    }
+
+    public void analyze() {
+        LOGGER.debug("Querying prometheus for canary '{}'", configuration.getName());
+        long result = prometheus.evaluate(configuration.getPrometheus().getQuery());
+        LOGGER.debug("Prometheus result: {} for canary '{}'", result, configuration.getName());
+
+        Long min = configuration.getPrometheus().getMin();
+        Long max = configuration.getPrometheus().getMax();
+        boolean success = true;
+
+        if (min != null && result < min) {
+            LOGGER.trace("Recording failure, as {} < {}", result, min);
+            success = false;
+        }
+        if (max != null && result > max) {
+            LOGGER.trace("Recording failure, as {} > {}", result, max);
+            success = false;
+        }
+
+        if (success) {
+            success();
+        } else {
+            failure();
+        }
+    }
+
+    private void failure() {
+        LOGGER.info("Analysis result of '{}': failed", configuration.getName());
+        int currentFailures = failures.incrementAndGet();
+
+        if (currentFailures > configuration.getMaxFailures()) {
+            LOGGER.info("Canary '{}' failed. Routing all traffic to primary from now on", configuration.getName());
+            status.set(Status.FAILED);
+        }
+    }
+
+    private void success() {
+        LOGGER.info("Analysis result of '{}': success", configuration.getName());
+
+        int currentWeight = canaryWeight.addAndGet(configuration.getWeight().getIncrease());
+        if (currentWeight > configuration.getWeight().getEnd()) {
+            LOGGER.info("Canary '{}' success. Routing all traffic to canary from now on", configuration.getName());
+            status.set(Status.SUCCESS);
+        } else {
+            LOGGER.info("Routing {}% of traffic to canary '{}'", currentWeight, configuration.getName());
+        }
+    }
+
     public String getName() {
         return configuration.getName();
     }
@@ -68,5 +125,9 @@ public class Canary {
 
     public InetSocketAddress getPrimaryAddress() {
         return configuration.getPrimaryAddress();
+    }
+
+    public Duration getAnalysisInterval() {
+        return configuration.getAnalysisInterval();
     }
 }

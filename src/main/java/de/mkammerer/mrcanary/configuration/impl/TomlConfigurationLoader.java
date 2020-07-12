@@ -64,26 +64,26 @@ public class TomlConfigurationLoader implements ConfigurationLoader {
         int maxFailures = Math.toIntExact(toml.getLong("max_failures"));
         Duration analysisInterval = Duration.parse(toml.getString("analysis_interval"));
 
-        CanaryConfiguration.Prometheus prometheus = parsePrometheus(toml);
-        CanaryConfiguration.Weight weight = parseWeight(toml);
+        CanaryConfiguration.PrometheusConfiguration prometheus = parsePrometheus(toml);
+        CanaryConfiguration.WeightConfiguration weight = parseWeight(toml);
 
         return new CanaryConfiguration(name, port, primaryAddress, canaryAddress, prometheus, maxFailures, analysisInterval, weight);
     }
 
-    private CanaryConfiguration.Weight parseWeight(Toml toml) {
+    private CanaryConfiguration.WeightConfiguration parseWeight(Toml toml) {
         int start = Math.toIntExact(toml.getLong("weight.start"));
         int end = Math.toIntExact(toml.getLong("weight.end"));
         int increase = Math.toIntExact(toml.getLong("weight.increase"));
 
-        return new CanaryConfiguration.Weight(start, end, increase);
+        return new CanaryConfiguration.WeightConfiguration(start, end, increase);
     }
 
-    private CanaryConfiguration.Prometheus parsePrometheus(Toml toml) {
+    private CanaryConfiguration.PrometheusConfiguration parsePrometheus(Toml toml) {
         String query = toml.getString("prometheus.query");
         Long min = toml.getLong("prometheus.min");
         Long max = toml.getLong("prometheus.max");
 
-        return new CanaryConfiguration.Prometheus(query, min, max);
+        return new CanaryConfiguration.PrometheusConfiguration(query, min, max);
     }
 
     private InetSocketAddress parseAddress(String address) {

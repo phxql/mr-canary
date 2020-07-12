@@ -27,7 +27,7 @@ public class CanaryConfiguration {
     /**
      * Prometheus configuration.
      */
-    Prometheus prometheus;
+    PrometheusConfiguration prometheus;
     /**
      * Maximum number of failures abort the rollout.
      */
@@ -39,10 +39,10 @@ public class CanaryConfiguration {
     /**
      * Weight configuration.
      */
-    Weight weight;
+    WeightConfiguration weight;
 
     @Value
-    public static class Weight {
+    public static class WeightConfiguration {
         /**
          * Starting weight percentage.
          */
@@ -58,7 +58,7 @@ public class CanaryConfiguration {
     }
 
     @Value
-    public static class Prometheus {
+    public static class PrometheusConfiguration {
         /**
          * Query to send to prometheus.
          */

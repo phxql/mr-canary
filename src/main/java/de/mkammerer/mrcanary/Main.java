@@ -6,6 +6,9 @@ import de.mkammerer.mrcanary.configuration.ConfigurationLoader;
 import de.mkammerer.mrcanary.configuration.GlobalConfiguration;
 import de.mkammerer.mrcanary.configuration.impl.TomlConfigurationLoader;
 import de.mkammerer.mrcanary.netty.ReverseProxyInitializer;
+import de.mkammerer.mrcanary.prometheus.Prometheus;
+import de.mkammerer.mrcanary.prometheus.impl.PrometheusMock;
+import de.mkammerer.mrcanary.util.NamedThreadFactory;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
@@ -19,6 +22,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -43,11 +48,13 @@ public final class Main {
         GlobalConfiguration globalConfiguration = configurationLoader.load();
         LOGGER.info("Using configuration {}", globalConfiguration);
 
-        CanaryManager canaryManager = CanaryManager.fromConfiguration(globalConfiguration.getCanaries());
-
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("canary-analyzer-%d"));
         try {
+            Prometheus prometheus = new PrometheusMock(0, 20);
+            CanaryManager canaryManager = CanaryManager.fromConfiguration(globalConfiguration.getCanaries(), scheduler, prometheus);
+
             List<ChannelFuture> futures = new ArrayList<>(globalConfiguration.getCanaries().size());
             for (Canary canary : canaryManager.getCanaries()) {
                 futures.add(startNetty(bossGroup, workerGroup, canary));
@@ -60,6 +67,7 @@ public final class Main {
         } finally {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
+            scheduler.shutdownNow();
         }
     }
 
