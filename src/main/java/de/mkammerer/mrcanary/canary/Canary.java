@@ -3,6 +3,7 @@ package de.mkammerer.mrcanary.canary;
 import de.mkammerer.mrcanary.configuration.CanaryConfiguration;
 import de.mkammerer.mrcanary.prometheus.Prometheus;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;
@@ -71,13 +72,14 @@ public class Canary {
         future.whenComplete(this::handleAnalysisResult);
     }
 
-    private void handleAnalysisResult(long result, Throwable throwable) {
+    private void handleAnalysisResult(@Nullable Long result, @Nullable Throwable throwable) {
         if (throwable != null) {
             LOGGER.warn("Failed to query prometheus for canary '{}'", configuration.getName(), throwable);
             failure();
             return;
         }
 
+        assert result != null;
         LOGGER.debug("Prometheus result: {} for canary '{}'", result, configuration.getName());
 
         Long min = configuration.getPrometheus().getMin();
