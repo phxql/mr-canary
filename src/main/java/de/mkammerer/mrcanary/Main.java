@@ -1,6 +1,7 @@
 package de.mkammerer.mrcanary;
 
-import de.mkammerer.mrcanary.configuration.CanaryConfiguration;
+import de.mkammerer.mrcanary.canary.Canary;
+import de.mkammerer.mrcanary.canary.CanaryManager;
 import de.mkammerer.mrcanary.configuration.ConfigurationLoader;
 import de.mkammerer.mrcanary.configuration.GlobalConfiguration;
 import de.mkammerer.mrcanary.configuration.impl.TomlConfigurationLoader;
@@ -42,25 +43,17 @@ public final class Main {
         GlobalConfiguration globalConfiguration = configurationLoader.load();
         LOGGER.info("Using configuration {}", globalConfiguration);
 
+        CanaryManager canaryManager = CanaryManager.fromConfiguration(globalConfiguration.getCanaries());
+
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
             List<ChannelFuture> futures = new ArrayList<>(globalConfiguration.getCanaries().size());
-
-            for (CanaryConfiguration canary : globalConfiguration.getCanaries()) {
-                LOGGER.info("Starting canary '{}' on port {} ...", canary.getName(), canary.getPort());
-
-                ServerBootstrap bootstrap = new ServerBootstrap();
-                ChannelFuture future = bootstrap.group(bossGroup, workerGroup)
-                    .channel(NioServerSocketChannel.class)
-                    .childHandler(new ReverseProxyInitializer(canary))
-                    .childOption(ChannelOption.AUTO_READ, false)
-                    .bind(canary.getPort()).sync();
-                futures.add(future);
-
-                LOGGER.info("Canary '{}' is running on port {}", canary.getName(), canary.getPort());
+            for (Canary canary : canaryManager.getCanaries()) {
+                futures.add(startNetty(bossGroup, workerGroup, canary));
             }
 
+            // Wait for all channels to close - this will not happen unless process is being killed
             for (ChannelFuture future : futures) {
                 future.channel().closeFuture().sync();
             }
@@ -68,5 +61,19 @@ public final class Main {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
         }
+    }
+
+    private ChannelFuture startNetty(EventLoopGroup bossGroup, EventLoopGroup workerGroup, Canary canary) throws InterruptedException {
+        LOGGER.info("Starting canary '{}' on port {} ...", canary.getName(), canary.getPort());
+
+        ServerBootstrap bootstrap = new ServerBootstrap();
+        ChannelFuture future = bootstrap.group(bossGroup, workerGroup)
+            .channel(NioServerSocketChannel.class)
+            .childHandler(new ReverseProxyInitializer(canary))
+            .childOption(ChannelOption.AUTO_READ, false)
+            .bind(canary.getPort()).sync();
+        LOGGER.info("Canary '{}' is running on port {}", canary.getName(), canary.getPort());
+
+        return future;
     }
 }

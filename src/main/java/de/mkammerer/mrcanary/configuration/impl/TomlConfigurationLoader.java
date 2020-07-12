@@ -88,11 +88,15 @@ public class TomlConfigurationLoader implements ConfigurationLoader {
 
     private InetSocketAddress parseAddress(String address) {
         // address is e.g. 'localhost:12345'
-        String[] parts = address.split(":");
-        if (parts.length != 2) {
-            throw new IllegalArgumentException(String.format("Expected 2 parts, got %d while parsing '%s'", parts.length, address));
+
+        int colonIndex = address.lastIndexOf(':');
+        if (colonIndex == -1) {
+            throw new IllegalArgumentException(String.format("Failed to find port in '%s'", address));
         }
 
-        return new InetSocketAddress(parts[0], Integer.parseInt(parts[1]));
+        String hostname = address.substring(0, colonIndex);
+        int port = Integer.parseInt(address.substring(colonIndex + 1));
+
+        return new InetSocketAddress(hostname, port);
     }
 }

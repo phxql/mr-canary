@@ -1,6 +1,6 @@
 package de.mkammerer.mrcanary.netty;
 
-import de.mkammerer.mrcanary.configuration.CanaryConfiguration;
+import de.mkammerer.mrcanary.canary.Canary;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @RequiredArgsConstructor
 @Slf4j
 public class ReverseProxyInitializer extends ChannelInitializer<SocketChannel> {
-    private final CanaryConfiguration canaryConfiguration;
+    private final Canary canary;
 
     // Gets incremented for every new connection
     private final AtomicLong idGenerator = new AtomicLong();
@@ -21,6 +21,6 @@ public class ReverseProxyInitializer extends ChannelInitializer<SocketChannel> {
         long id = idGenerator.getAndIncrement();
 
         LOGGER.debug("[{}] Initializing channel", id);
-        ch.pipeline().addLast(new FrontendHandler(id, canaryConfiguration));
+        ch.pipeline().addLast(new FrontendHandler(id, canary));
     }
 }

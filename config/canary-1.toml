@@ -1,8 +1,8 @@
 name = "Test Canary #1"
 
 port = 8080
-primary_address = "localhost:2020"
-canary_address = "localhost:3030"
+primary_address = "127.0.0.1:2020"
+canary_address = "127.0.0.1:3030"
 max_failures = 0
 analysis_interval = "PT1M"
 
@@ -11,6 +11,6 @@ query = "TODO"
 max = 10
 
 [weight]
-start = 0
-end = 50
+start = 50
+end = 100
 increase = 10
