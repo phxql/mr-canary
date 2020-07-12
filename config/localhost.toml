@@ -1,0 +1,14 @@
+port = 8080
+primary_address = "localhost:2020"
+canary_address = "localhost:3030"
+max_failures = 0
+analysis_interval = "PT1M"
+
+[prometheus]
+query = "TODO"
+max = 10
+
+[weight]
+start = 0
+end = 50
+increase = 10
