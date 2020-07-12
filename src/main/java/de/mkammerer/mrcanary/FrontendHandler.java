@@ -1,5 +1,6 @@
 package de.mkammerer.mrcanary;
 
+import de.mkammerer.mrcanary.configuration.CanaryConfiguration;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -11,13 +12,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.net.SocketAddress;
-
 @Slf4j
 @RequiredArgsConstructor
 public class FrontendHandler extends ChannelInboundHandlerAdapter {
     private final long id;
-    private final SocketAddress backendAddress;
+    private final CanaryConfiguration canaryConfiguration;
 
     @Nullable
     private Channel backendChannel;
@@ -43,7 +42,7 @@ public class FrontendHandler extends ChannelInboundHandlerAdapter {
     }
 
     private ChannelFuture connectToBackend(ChannelHandlerContext ctx) {
-        LOGGER.debug("[{}] Connecting to backend {}", id, backendAddress);
+        LOGGER.debug("[{}] Connecting to backend {}", id, canaryConfiguration.getPrimaryAddress());
 
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.group(ctx.channel().eventLoop())
@@ -51,7 +50,7 @@ public class FrontendHandler extends ChannelInboundHandlerAdapter {
             .handler(new BackendHandler(id, ctx.channel()))
             .option(ChannelOption.AUTO_READ, false);
 
-        return bootstrap.connect(backendAddress);
+        return bootstrap.connect(canaryConfiguration.getPrimaryAddress());
     }
 
     @Override

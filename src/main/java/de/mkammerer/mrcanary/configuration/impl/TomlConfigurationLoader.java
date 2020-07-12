@@ -44,7 +44,7 @@ public class TomlConfigurationLoader implements ConfigurationLoader {
             return List.of();
         }
 
-        try (Stream<Path> canaryConfig = Files.list(canariesDirectory)) {
+        try (Stream<Path> canaryConfig = Files.list(canariesDirectory).sorted()) {
             return canaryConfig.map(this::loadCanaryConfig).collect(Collectors.toList());
         } catch (IOException e) {
             throw new ConfigurationException(String.format("Failed to list canary configs from %s", canariesDirectory), e);
@@ -57,6 +57,7 @@ public class TomlConfigurationLoader implements ConfigurationLoader {
 
         Toml toml = new Toml().read(configFile.toFile());
 
+        String name = toml.getString("name");
         int port = Math.toIntExact(toml.getLong("port"));
         InetSocketAddress primaryAddress = parseAddress(toml.getString("primary_address"));
         InetSocketAddress canaryAddress = parseAddress(toml.getString("canary_address"));
@@ -66,7 +67,7 @@ public class TomlConfigurationLoader implements ConfigurationLoader {
         CanaryConfiguration.Prometheus prometheus = parsePrometheus(toml);
         CanaryConfiguration.Weight weight = parseWeight(toml);
 
-        return new CanaryConfiguration(port, primaryAddress, canaryAddress, prometheus, maxFailures, analysisInterval, weight);
+        return new CanaryConfiguration(name, port, primaryAddress, canaryAddress, prometheus, maxFailures, analysisInterval, weight);
     }
 
     private CanaryConfiguration.Weight parseWeight(Toml toml) {

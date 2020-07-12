@@ -9,6 +9,10 @@ import java.time.Duration;
 @Value
 public class CanaryConfiguration {
     /**
+     * Name of the canary.
+     */
+    String name;
+    /**
      * Port where the primary/canary can be reached.
      */
     int port;

@@ -1,5 +1,6 @@
 package de.mkammerer.mrcanary;
 
+import de.mkammerer.mrcanary.configuration.CanaryConfiguration;
 import de.mkammerer.mrcanary.configuration.ConfigurationLoader;
 import de.mkammerer.mrcanary.configuration.GlobalConfiguration;
 import de.mkammerer.mrcanary.configuration.impl.TomlConfigurationLoader;
@@ -12,16 +13,14 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
 public final class Main {
-    private static final int LOCAL_PORT = 8080;
-    private static final SocketAddress BACKEND = new InetSocketAddress("www.mkammerer.de", 443);
     private static final Path CONFIG_FILE = Paths.get("config.toml");
 
     private final ConfigurationLoader configurationLoader;
@@ -45,16 +44,25 @@ public final class Main {
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
-            ServerBootstrap bootstrap = new ServerBootstrap();
-            ChannelFuture future = bootstrap.group(bossGroup, workerGroup)
-                .channel(NioServerSocketChannel.class)
-                .childHandler(new ReverseProxyInitializer(BACKEND))
-                .childOption(ChannelOption.AUTO_READ, false)
-                .bind(LOCAL_PORT).sync();
+            List<ChannelFuture> futures = new ArrayList<>(globalConfiguration.getCanaries().size());
 
-            LOGGER.info("Running on port {}", LOCAL_PORT);
+            for (CanaryConfiguration canary : globalConfiguration.getCanaries()) {
+                LOGGER.info("Starting canary '{}' on port {} ...", canary.getName(), canary.getPort());
 
-            future.channel().closeFuture().sync();
+                ServerBootstrap bootstrap = new ServerBootstrap();
+                ChannelFuture future = bootstrap.group(bossGroup, workerGroup)
+                    .channel(NioServerSocketChannel.class)
+                    .childHandler(new ReverseProxyInitializer(canary))
+                    .childOption(ChannelOption.AUTO_READ, false)
+                    .bind(canary.getPort()).sync();
+                futures.add(future);
+
+                LOGGER.info("Canary '{}' is running on port {}", canary.getName(), canary.getPort());
+            }
+
+            for (ChannelFuture future : futures) {
+                future.channel().closeFuture().sync();
+            }
         } finally {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();

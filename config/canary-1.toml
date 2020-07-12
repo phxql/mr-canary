@@ -1,3 +1,5 @@
+name = "Test Canary #1"
+
 port = 8080
 primary_address = "localhost:2020"
 canary_address = "localhost:3030"
