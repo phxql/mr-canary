@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -66,7 +67,17 @@ public class Canary {
 
     public void analyze() {
         LOGGER.debug("Querying prometheus for canary '{}'", configuration.getName());
-        long result = prometheus.evaluate(configuration.getPrometheus().getQuery());
+        CompletableFuture<Long> future = prometheus.evaluate(configuration.getPrometheus().getQuery());
+        future.whenComplete(this::handleAnalysisResult);
+    }
+
+    private void handleAnalysisResult(long result, Throwable throwable) {
+        if (throwable != null) {
+            LOGGER.warn("Failed to query prometheus for canary '{}'", configuration.getName(), throwable);
+            failure();
+            return;
+        }
+
         LOGGER.debug("Prometheus result: {} for canary '{}'", result, configuration.getName());
 
         Long min = configuration.getPrometheus().getMin();

@@ -1,5 +1,7 @@
 package de.mkammerer.mrcanary.prometheus;
 
+import java.util.concurrent.CompletableFuture;
+
 public interface Prometheus {
-    long evaluate(String query);
+    CompletableFuture<Long> evaluate(String query);
 }
