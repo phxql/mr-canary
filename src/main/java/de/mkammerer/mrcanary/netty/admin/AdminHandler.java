@@ -4,11 +4,12 @@ import com.google.gson.Gson;
 import de.mkammerer.mrcanary.netty.NettyHelper;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import lombok.extern.slf4j.Slf4j;
@@ -17,37 +18,34 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @Slf4j
-public class AdminHandler extends ChannelInboundHandlerAdapter {
+public class AdminHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private final Gson gson = new Gson();
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (msg instanceof HttpRequest) {
-            handle(ctx, (HttpRequest) msg);
-        }
+    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) throws Exception {
+        FullHttpResponse response = handle(ctx, msg);
+
+        response.headers()
+            .set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE)
+            .set(HttpHeaderNames.CONTENT_LENGTH, response.content().readableBytes());
+
+        ctx.writeAndFlush(response);
     }
 
-    private void handle(ChannelHandlerContext ctx, HttpRequest request) {
-        FullHttpResponse response;
-
+    private FullHttpResponse handle(ChannelHandlerContext ctx, FullHttpRequest request) {
         switch (request.uri()) {
             case "/status":
-                response = json(handleStatus());
-                break;
+                return toJson(handleStatus());
             default:
-                response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_0, HttpResponseStatus.NOT_FOUND);
-                break;
+                return new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
         }
-
-        ctx.write(response);
-        NettyHelper.flushAndClose(ctx.channel());
     }
 
-    private FullHttpResponse json(Object message) {
+    private FullHttpResponse toJson(Object message) {
         String json = gson.toJson(message);
 
         DefaultFullHttpResponse response = new DefaultFullHttpResponse(
-            HttpVersion.HTTP_1_0, HttpResponseStatus.OK, Unpooled.copiedBuffer(json, StandardCharsets.UTF_8)
+            HttpVersion.HTTP_1_1, HttpResponseStatus.OK, Unpooled.copiedBuffer(json, StandardCharsets.UTF_8)
         );
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json");
         return response;
