@@ -1,13 +1,14 @@
 name = "Test Canary #1"
 
 port = 8080
-primary_address = "127.0.0.1:2020"
-canary_address = "127.0.0.1:3030"
+blue_address = "127.0.0.1:2020"
+green_address = "127.0.0.1:3030"
 max_failures = 3
 analysis_interval = "PT3S"
 
 [prometheus]
-query = "TODO"
+query_blue = "TODO - blue"
+query_green = "TODO - green"
 max = 10
 
 [weight]

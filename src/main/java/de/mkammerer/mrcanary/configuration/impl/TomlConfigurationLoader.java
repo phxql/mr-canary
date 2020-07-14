@@ -1,6 +1,7 @@
 package de.mkammerer.mrcanary.configuration.impl;
 
 import com.moandjiezana.toml.Toml;
+import de.mkammerer.mrcanary.canary.CanaryId;
 import de.mkammerer.mrcanary.configuration.CanaryConfiguration;
 import de.mkammerer.mrcanary.configuration.ConfigurationException;
 import de.mkammerer.mrcanary.configuration.ConfigurationLoader;
@@ -58,17 +59,17 @@ public class TomlConfigurationLoader implements ConfigurationLoader {
 
         Toml toml = new Toml().read(configFile.toFile());
 
-        String name = toml.getString("name");
+        String id = toml.getString("id");
         int port = Math.toIntExact(toml.getLong("port"));
-        InetSocketAddress primaryAddress = parseAddress(toml.getString("primary_address"));
-        InetSocketAddress canaryAddress = parseAddress(toml.getString("canary_address"));
+        InetSocketAddress blueAddress = parseAddress(toml.getString("blue_address"));
+        InetSocketAddress greenAddress = parseAddress(toml.getString("green_address"));
         int maxFailures = Math.toIntExact(toml.getLong("max_failures"));
         Duration analysisInterval = Duration.parse(toml.getString("analysis_interval"));
 
         CanaryConfiguration.PrometheusConfiguration prometheus = parsePrometheus(toml);
         CanaryConfiguration.WeightConfiguration weight = parseWeight(toml);
 
-        return new CanaryConfiguration(name, port, primaryAddress, canaryAddress, prometheus, maxFailures, analysisInterval, weight);
+        return new CanaryConfiguration(CanaryId.of(id), port, blueAddress, greenAddress, prometheus, maxFailures, analysisInterval, weight);
     }
 
     private CanaryConfiguration.WeightConfiguration parseWeight(Toml toml) {
@@ -80,11 +81,12 @@ public class TomlConfigurationLoader implements ConfigurationLoader {
     }
 
     private CanaryConfiguration.PrometheusConfiguration parsePrometheus(Toml toml) {
-        String query = toml.getString("prometheus.query");
+        String blueQuery = toml.getString("prometheus.blue_query");
+        String greenQuery = toml.getString("prometheus.green_query");
         Long min = toml.getLong("prometheus.min");
         Long max = toml.getLong("prometheus.max");
 
-        return new CanaryConfiguration.PrometheusConfiguration(query, min, max);
+        return new CanaryConfiguration.PrometheusConfiguration(blueQuery, greenQuery, min, max);
     }
 
     private InetSocketAddress parseAddress(String address) {

@@ -1,5 +1,6 @@
 package de.mkammerer.mrcanary.canary;
 
+import de.mkammerer.mrcanary.canary.state.CanaryStateManager;
 import de.mkammerer.mrcanary.configuration.CanaryConfiguration;
 import de.mkammerer.mrcanary.prometheus.Prometheus;
 import de.mkammerer.mrcanary.util.Lists;
@@ -29,7 +30,7 @@ public class CanaryManager {
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("Canary configuration:");
             for (Canary canary : canaries) {
-                LOGGER.info("  {} on port {} - primary backend: {}, canary backend: {}", canary.getName(), canary.getPort(), canary.getPrimaryAddress(), canary.getCanaryAddress());
+                LOGGER.info("  {} on port {} - blue backend: {}, green backend: {}", canary.getId(), canary.getPort(), canary.getBlueAddress(), canary.getGreenAddress());
             }
         }
     }
@@ -52,7 +53,7 @@ public class CanaryManager {
             return;
         }
 
-        LOGGER.info("Analysing canary '{}'", canary.getName());
+        LOGGER.info("Analysing canary '{}'", canary.getId());
         canary.analyze();
     }
 
@@ -61,9 +62,9 @@ public class CanaryManager {
         return canaries;
     }
 
-    public static CanaryManager fromConfiguration(List<CanaryConfiguration> canaryConfigurations, ScheduledExecutorService scheduler, Prometheus prometheus) {
+    public static CanaryManager fromConfiguration(List<CanaryConfiguration> canaryConfigurations, ScheduledExecutorService scheduler, Prometheus prometheus, CanaryStateManager canaryStateManager) {
         return new CanaryManager(
-            Lists.map(canaryConfigurations, configuration -> new Canary(configuration, prometheus)),
+            Lists.map(canaryConfigurations, configuration -> new Canary(configuration, prometheus, canaryStateManager)),
             scheduler
         );
     }

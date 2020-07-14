@@ -1,5 +1,6 @@
 package de.mkammerer.mrcanary.configuration;
 
+import de.mkammerer.mrcanary.canary.CanaryId;
 import lombok.Value;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -11,19 +12,19 @@ public class CanaryConfiguration {
     /**
      * Name of the canary.
      */
-    String name;
+    CanaryId id;
     /**
      * Port where the primary/canary can be reached.
      */
     int port;
     /**
-     * Address of the primary.
+     * Address of the blue system.
      */
-    InetSocketAddress primaryAddress;
+    InetSocketAddress blueAddress;
     /**
-     * Address of the canary.
+     * Address of the green system.
      */
-    InetSocketAddress canaryAddress;
+    InetSocketAddress greenAddress;
     /**
      * Prometheus configuration.
      */
@@ -60,9 +61,13 @@ public class CanaryConfiguration {
     @Value
     public static class PrometheusConfiguration {
         /**
-         * Query to send to prometheus.
+         * Query for the blue system to send to prometheus.
          */
-        String query;
+        String blueQuery;
+        /**
+         * Query for the green system to send to prometheus.
+         */
+        String greenQuery;
         /**
          * Query result minimum value.
          */

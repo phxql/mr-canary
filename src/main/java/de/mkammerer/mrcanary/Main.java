@@ -2,6 +2,8 @@ package de.mkammerer.mrcanary;
 
 import de.mkammerer.mrcanary.canary.Canary;
 import de.mkammerer.mrcanary.canary.CanaryManager;
+import de.mkammerer.mrcanary.canary.state.CanaryStateManager;
+import de.mkammerer.mrcanary.canary.state.impl.InMemoryCanaryStateManager;
 import de.mkammerer.mrcanary.configuration.ConfigurationLoader;
 import de.mkammerer.mrcanary.configuration.GlobalConfiguration;
 import de.mkammerer.mrcanary.configuration.impl.TomlConfigurationLoader;
@@ -55,7 +57,8 @@ public final class Main {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("canary-analyzer-%d"));
         try {
             Prometheus prometheus = new PrometheusMock(0, 20);
-            CanaryManager canaryManager = CanaryManager.fromConfiguration(globalConfiguration.getCanaries(), scheduler, prometheus);
+            CanaryStateManager canaryStateManager = new InMemoryCanaryStateManager();
+            CanaryManager canaryManager = CanaryManager.fromConfiguration(globalConfiguration.getCanaries(), scheduler, prometheus, canaryStateManager);
 
             List<ChannelFuture> futures = new ArrayList<>(globalConfiguration.getCanaries().size());
 
@@ -90,7 +93,7 @@ public final class Main {
     }
 
     private ChannelFuture startNettyForCanary(EventLoopGroup bossGroup, EventLoopGroup workerGroup, Canary canary) throws InterruptedException {
-        LOGGER.info("Starting canary '{}' on port {} ...", canary.getName(), canary.getPort());
+        LOGGER.info("Starting canary '{}' on port {} ...", canary.getId(), canary.getPort());
 
         ServerBootstrap bootstrap = new ServerBootstrap();
         ChannelFuture future = bootstrap.group(bossGroup, workerGroup)
@@ -98,7 +101,7 @@ public final class Main {
             .childHandler(new ReverseProxyInitializer(canary))
             .childOption(ChannelOption.AUTO_READ, false)
             .bind(canary.getPort()).sync();
-        LOGGER.info("Canary '{}' is running on port {}", canary.getName(), canary.getPort());
+        LOGGER.info("Canary '{}' is running on port {}", canary.getId(), canary.getPort());
 
         return future;
     }
