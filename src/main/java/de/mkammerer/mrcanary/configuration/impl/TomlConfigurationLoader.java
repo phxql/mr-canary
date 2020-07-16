@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 @Slf4j
 @RequiredArgsConstructor
 // TODO: Throw useful exceptions on invalid data
+// TODO: Validate id
 public class TomlConfigurationLoader implements ConfigurationLoader {
     private final Path file;
 

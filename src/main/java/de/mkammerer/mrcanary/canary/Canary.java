@@ -11,6 +11,7 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 public class Canary {
@@ -18,6 +19,7 @@ public class Canary {
     private final CanaryConfiguration configuration;
     private final Prometheus prometheus;
     private final CanaryStateManager canaryStateManager;
+    private final AtomicReference<CanaryState> state = new AtomicReference<>();
 
     public Canary(CanaryConfiguration configuration, Prometheus prometheus, CanaryStateManager canaryStateManager) {
         this.canaryId = configuration.getId();
@@ -29,9 +31,12 @@ public class Canary {
     }
 
     private void initDefaultStateIfNeeded() {
-        if (canaryStateManager.getState(canaryId) == null) {
+        CanaryState storeState = canaryStateManager.getState(canaryId);
+        if (storeState == null) {
             LOGGER.debug("Initializing default canary state for canary '{}'", canaryId);
-            canaryStateManager.setState(canaryId, new CanaryState(Status.INIT_BLUE, configuration.getWeight().getStart(), 0));
+            setState(new CanaryState(Status.INIT_BLUE, configuration.getWeight().getStart(), 0));
+        } else {
+            state.set(storeState);
         }
     }
 
@@ -57,12 +62,8 @@ public class Canary {
         }
     }
 
-    private CanaryState getState() {
-        CanaryState state = canaryStateManager.getState(canaryId);
-        if (state == null) {
-            throw new IllegalStateException(String.format("Canary state is null for canary '%s'", canaryId));
-        }
-        return state;
+    public CanaryState getState() {
+        return state.get();
     }
 
     private InetSocketAddress castDice(int weight, InetSocketAddress primary, InetSocketAddress canary) {
@@ -157,7 +158,7 @@ public class Canary {
             LOGGER.info("Canary '{}' failed. Routing all traffic to {} from now on", canaryId, state.getStatus().getBackendColor());
         }
 
-        canaryStateManager.setState(canaryId, state);
+        setState(state);
     }
 
     private void success() {
@@ -182,7 +183,12 @@ public class Canary {
             LOGGER.info("Routing {}% of traffic to {} for canary '{}'", state.getWeight(), getCanaryColor(state.getStatus()), canaryId);
         }
 
-        canaryStateManager.setState(canaryId, state);
+        setState(state);
+    }
+
+    private void setState(CanaryState newState) {
+        state.set(newState);
+        canaryStateManager.setState(canaryId, newState);
     }
 
     public CanaryId getId() {

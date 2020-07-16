@@ -9,6 +9,8 @@ import de.mkammerer.mrcanary.configuration.GlobalConfiguration;
 import de.mkammerer.mrcanary.configuration.impl.TomlConfigurationLoader;
 import de.mkammerer.mrcanary.netty.ReverseProxyInitializer;
 import de.mkammerer.mrcanary.netty.admin.AdminInitializer;
+import de.mkammerer.mrcanary.netty.admin.route.CanariesRoute;
+import de.mkammerer.mrcanary.netty.admin.route.StatusRoute;
 import de.mkammerer.mrcanary.prometheus.Prometheus;
 import de.mkammerer.mrcanary.prometheus.impl.PrometheusMock;
 import de.mkammerer.mrcanary.util.NamedThreadFactory;
@@ -59,11 +61,13 @@ public final class Main {
             Prometheus prometheus = new PrometheusMock(0, 20);
             CanaryStateManager canaryStateManager = new InMemoryCanaryStateManager();
             CanaryManager canaryManager = CanaryManager.fromConfiguration(globalConfiguration.getCanaries(), scheduler, prometheus, canaryStateManager);
+            StatusRoute statusRoute = new StatusRoute();
+            CanariesRoute canariesRoute = new CanariesRoute(canaryManager);
 
             List<ChannelFuture> futures = new ArrayList<>(globalConfiguration.getCanaries().size());
 
             // Add admin ports
-            futures.add(startNettyForAdmin(bossGroup, workerGroup, globalConfiguration.getAdminAddress()));
+            futures.add(startNettyForAdmin(bossGroup, workerGroup, globalConfiguration.getAdminAddress(), statusRoute, canariesRoute));
 
             // Add canary ports
             for (Canary canary : canaryManager.getCanaries()) {
@@ -81,14 +85,14 @@ public final class Main {
         }
     }
 
-    private ChannelFuture startNettyForAdmin(EventLoopGroup bossGroup, EventLoopGroup workerGroup, InetSocketAddress adminAddress) throws InterruptedException {
+    private ChannelFuture startNettyForAdmin(EventLoopGroup bossGroup, EventLoopGroup workerGroup, InetSocketAddress adminAddress, StatusRoute statusRoute, CanariesRoute canariesRoute) throws InterruptedException {
         LOGGER.info("Starting admin interface on {}", adminAddress);
 
         ServerBootstrap bootstrap = new ServerBootstrap();
 
         return bootstrap.group(bossGroup, workerGroup)
             .channel(NioServerSocketChannel.class)
-            .childHandler(new AdminInitializer())
+            .childHandler(new AdminInitializer(statusRoute, canariesRoute))
             .bind(adminAddress).sync();
     }
 

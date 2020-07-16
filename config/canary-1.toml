@@ -1,4 +1,4 @@
-id = "Test Canary #1"
+id = "test-canary-1"
 
 port = 8080
 blue_address = "127.0.0.1:2020"
