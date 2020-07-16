@@ -69,9 +69,9 @@ public class Canary {
     }
 
     public boolean isRunning() {
-        Status state = getState().getStatus();
+        Status status = getState().getStatus();
 
-        return state.getBackendColor() == Color.SHIFTING;
+        return status == Status.SHIFT_TO_BLUE || status == Status.SHIFT_TO_GREEN;
     }
 
     public void analyze() {
@@ -90,22 +90,24 @@ public class Canary {
     }
 
     public CanaryState start() {
-        if (isRunning()) {
-            throw new IllegalStateException(String.format("Canary '%s' is already running", canaryId));
-        }
-
         CanaryState state = getState();
 
         Status newStatus;
         switch (state.getStatus()) {
+            case SHIFT_TO_BLUE:
+            case SHIFT_TO_GREEN:
+                // Canary is already running
+                throw new IllegalStateException(String.format("Canary '%s' is already running", canaryId));
             case INIT_BLUE:
             case FAILED_BLUE:
             case SUCCESS_BLUE:
+                // Current backend is blue -> shift to green
                 newStatus = Status.SHIFT_TO_GREEN;
                 break;
             case INIT_GREEN:
             case FAILED_GREEN:
             case SUCCESS_GREEN:
+                // Current backend is green -> shift to blue
                 newStatus = Status.SHIFT_TO_BLUE;
                 break;
             default:
