@@ -1,6 +1,7 @@
 package de.mkammerer.mrcanary.configuration;
 
 import de.mkammerer.mrcanary.canary.CanaryId;
+import de.mkammerer.mrcanary.canary.Color;
 import lombok.Value;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -76,5 +77,18 @@ public class CanaryConfiguration {
          * Query result maximum value.
          */
         @Nullable Long max;
+
+        public String getQueryForColor(Color color) {
+            switch (color) {
+                case BLUE:
+                    return blueQuery;
+                case GREEN:
+                    return greenQuery;
+                case SHIFTING:
+                    throw new IllegalArgumentException("Can't get query for color " + Color.SHIFTING);
+                default:
+                    throw new IllegalStateException("Unexpected value: " + color);
+            }
+        }
     }
 }

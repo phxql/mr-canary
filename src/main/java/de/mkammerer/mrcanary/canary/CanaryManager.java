@@ -39,7 +39,14 @@ public class CanaryManager {
         for (Canary canary : canaries) {
             long analysisIntervalInSeconds = canary.getAnalysisInterval().toSeconds();
 
-            scheduler.scheduleWithFixedDelay(() -> analyseCanary(canary), analysisIntervalInSeconds, analysisIntervalInSeconds, TimeUnit.SECONDS);
+            Runnable job = () -> {
+                try {
+                    analyseCanary(canary);
+                } catch (RuntimeException e) {
+                    LOGGER.warn("Exception in scheduled job", e);
+                }
+            };
+            scheduler.scheduleWithFixedDelay(job, analysisIntervalInSeconds, analysisIntervalInSeconds, TimeUnit.SECONDS);
         }
     }
 
