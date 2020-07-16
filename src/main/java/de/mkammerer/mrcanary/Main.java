@@ -9,8 +9,11 @@ import de.mkammerer.mrcanary.configuration.GlobalConfiguration;
 import de.mkammerer.mrcanary.configuration.impl.TomlConfigurationLoader;
 import de.mkammerer.mrcanary.netty.ReverseProxyInitializer;
 import de.mkammerer.mrcanary.netty.admin.AdminInitializer;
-import de.mkammerer.mrcanary.netty.admin.route.CanariesRoute;
-import de.mkammerer.mrcanary.netty.admin.route.StatusRoute;
+import de.mkammerer.mrcanary.netty.admin.Routes;
+import de.mkammerer.mrcanary.netty.admin.route.impl.CanariesRoute;
+import de.mkammerer.mrcanary.netty.admin.route.impl.DefaultRoute;
+import de.mkammerer.mrcanary.netty.admin.route.impl.StartCanaryRoute;
+import de.mkammerer.mrcanary.netty.admin.route.impl.StatusRoute;
 import de.mkammerer.mrcanary.prometheus.Prometheus;
 import de.mkammerer.mrcanary.prometheus.impl.PrometheusMock;
 import de.mkammerer.mrcanary.util.NamedThreadFactory;
@@ -61,13 +64,17 @@ public final class Main {
             Prometheus prometheus = new PrometheusMock(0, 20);
             CanaryStateManager canaryStateManager = new InMemoryCanaryStateManager();
             CanaryManager canaryManager = CanaryManager.fromConfiguration(globalConfiguration.getCanaries(), scheduler, prometheus, canaryStateManager);
-            StatusRoute statusRoute = new StatusRoute();
-            CanariesRoute canariesRoute = new CanariesRoute(canaryManager);
+            Routes routes = new Routes(
+                new DefaultRoute(),
+                new StatusRoute(),
+                new CanariesRoute(canaryManager),
+                new StartCanaryRoute(canaryManager)
+            );
 
             List<ChannelFuture> futures = new ArrayList<>(globalConfiguration.getCanaries().size());
 
             // Add admin ports
-            futures.add(startNettyForAdmin(bossGroup, workerGroup, globalConfiguration.getAdminAddress(), statusRoute, canariesRoute));
+            futures.add(startNettyForAdmin(bossGroup, workerGroup, globalConfiguration.getAdminAddress(), routes));
 
             // Add canary ports
             for (Canary canary : canaryManager.getCanaries()) {
@@ -85,14 +92,14 @@ public final class Main {
         }
     }
 
-    private ChannelFuture startNettyForAdmin(EventLoopGroup bossGroup, EventLoopGroup workerGroup, InetSocketAddress adminAddress, StatusRoute statusRoute, CanariesRoute canariesRoute) throws InterruptedException {
+    private ChannelFuture startNettyForAdmin(EventLoopGroup bossGroup, EventLoopGroup workerGroup, InetSocketAddress adminAddress, Routes routes) throws InterruptedException {
         LOGGER.info("Starting admin interface on {}", adminAddress);
 
         ServerBootstrap bootstrap = new ServerBootstrap();
 
         return bootstrap.group(bossGroup, workerGroup)
             .channel(NioServerSocketChannel.class)
-            .childHandler(new AdminInitializer(statusRoute, canariesRoute))
+            .childHandler(new AdminInitializer(routes))
             .bind(adminAddress).sync();
     }
 

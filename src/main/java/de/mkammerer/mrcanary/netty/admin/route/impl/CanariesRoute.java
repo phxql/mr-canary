@@ -1,6 +1,9 @@
-package de.mkammerer.mrcanary.netty.admin.route;
+package de.mkammerer.mrcanary.netty.admin.route.impl;
 
 import de.mkammerer.mrcanary.canary.CanaryManager;
+import de.mkammerer.mrcanary.netty.admin.route.QueryString;
+import de.mkammerer.mrcanary.netty.admin.route.Route;
+import de.mkammerer.mrcanary.netty.admin.route.RouteResult;
 import de.mkammerer.mrcanary.netty.admin.route.dto.CanariesDto;
 import de.mkammerer.mrcanary.util.Lists;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -14,13 +17,13 @@ public class CanariesRoute implements Route {
     private final CanaryManager canaryManager;
 
     @Override
-    public Object execute(FullHttpRequest request) {
+    public RouteResult execute(FullHttpRequest request, QueryString queryString) {
         if (request.method() != HttpMethod.GET) {
-            return null;
+            return RouteResult.methodNotAllowed(request.method(), queryString.getUri());
         }
 
-        return CanariesDto.of(
+        return RouteResult.ok(CanariesDto.of(
             Lists.map(canaryManager.getCanaries(), CanariesDto.CanaryDto::fromCanary)
-        );
+        ));
     }
 }
