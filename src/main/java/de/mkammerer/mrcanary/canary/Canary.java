@@ -20,23 +20,25 @@ public class Canary {
     private final Prometheus prometheus;
     private final CanaryStateManager canaryStateManager;
     private final AtomicReference<CanaryState> state = new AtomicReference<>();
+    private final CanaryState defaultState;
 
     public Canary(CanaryConfiguration configuration, Prometheus prometheus, CanaryStateManager canaryStateManager) {
         this.canaryId = configuration.getId();
         this.configuration = configuration;
         this.prometheus = prometheus;
         this.canaryStateManager = canaryStateManager;
+        this.defaultState = new CanaryState(Status.INIT_BLUE, configuration.getWeight().getStart(), 0);
 
         initDefaultStateIfNeeded();
     }
 
     private void initDefaultStateIfNeeded() {
-        CanaryState storeState = canaryStateManager.getState(canaryId);
-        if (storeState == null) {
+        CanaryState storedState = canaryStateManager.getState(canaryId);
+        if (storedState == null) {
             LOGGER.debug("Initializing default canary state for canary '{}'", canaryId);
-            setState(new CanaryState(Status.INIT_BLUE, configuration.getWeight().getStart(), 0));
+            setState(defaultState);
         } else {
-            state.set(storeState);
+            state.set(storedState);
         }
     }
 
@@ -66,6 +68,58 @@ public class Canary {
         return state.get();
     }
 
+    public boolean isRunning() {
+        Status state = getState().getStatus();
+
+        return state.getBackendColor() == Color.SHIFTING;
+    }
+
+    public void analyze() {
+        if (!isRunning()) {
+            throw new IllegalStateException(String.format("Can't analyze, as canary '%s' isn't running", canaryId));
+        }
+
+        Status status = getState().getStatus();
+        Color canaryColor = getCanaryColor(status);
+        String query = configuration.getPrometheus().getQueryForColor(canaryColor);
+
+        LOGGER.debug("Querying {} prometheus for canary '{}'", canaryColor, canaryId);
+        LOGGER.debug("Query: '{}'", query);
+        CompletableFuture<Long> future = prometheus.evaluate(query);
+        future.whenComplete(this::handleAnalysisResult);
+    }
+
+    public CanaryState start() {
+        if (isRunning()) {
+            throw new IllegalStateException(String.format("Canary '%s' is already running", canaryId));
+        }
+
+        CanaryState state = getState();
+
+        Status newStatus;
+        switch (state.getStatus()) {
+            case INIT_BLUE:
+            case FAILED_BLUE:
+            case SUCCESS_BLUE:
+                newStatus = Status.SHIFT_TO_GREEN;
+                break;
+            case INIT_GREEN:
+            case FAILED_GREEN:
+            case SUCCESS_GREEN:
+                newStatus = Status.SHIFT_TO_BLUE;
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + state.getStatus());
+        }
+
+        LOGGER.info("Starting canary '{}'. State changed: {} -> {}", canaryId, state.getStatus(), newStatus);
+
+        CanaryState newState = defaultState.withStatus(newStatus);
+        setState(newState);
+
+        return newState;
+    }
+
     private InetSocketAddress castDice(int weight, InetSocketAddress primary, InetSocketAddress canary) {
         // Range from 1 to 100 (both inclusive)
         int dice = ThreadLocalRandom.current().nextInt(1, 100 + 1);
@@ -78,23 +132,6 @@ public class Canary {
         }
 
         return primary;
-    }
-
-    public boolean needAnalyze() {
-        Status state = getState().getStatus();
-
-        return state.getBackendColor() == Color.SHIFTING;
-    }
-
-    public void analyze() {
-        Status status = getState().getStatus();
-        Color canaryColor = getCanaryColor(status);
-        String query = configuration.getPrometheus().getQueryForColor(canaryColor);
-
-        LOGGER.debug("Querying {} prometheus for canary '{}'", canaryColor, canaryId);
-        LOGGER.debug("Query: '{}'", query);
-        CompletableFuture<Long> future = prometheus.evaluate(query);
-        future.whenComplete(this::handleAnalysisResult);
     }
 
     private Color getCanaryColor(Status status) {

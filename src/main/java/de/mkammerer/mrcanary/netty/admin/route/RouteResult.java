@@ -6,7 +6,7 @@ import lombok.Value;
 
 import java.util.Map;
 
-@Value
+@Value(staticConstructor = "of")
 public class RouteResult {
     HttpResponseStatus status;
     Object body;
