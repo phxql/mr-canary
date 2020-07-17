@@ -7,7 +7,7 @@ import de.mkammerer.mrcanary.canary.state.CanaryState;
 import de.mkammerer.mrcanary.netty.admin.route.QueryString;
 import de.mkammerer.mrcanary.netty.admin.route.Route;
 import de.mkammerer.mrcanary.netty.admin.route.RouteResult;
-import de.mkammerer.mrcanary.netty.admin.route.dto.StartCanaryDto;
+import de.mkammerer.mrcanary.netty.admin.route.dto.AbortCanaryDto;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -18,8 +18,8 @@ import java.util.Map;
 
 @RequiredArgsConstructor
 @Slf4j
-public class StartCanaryRoute implements Route {
-    public static final String PATH = "/start";
+public class AbortCanaryRoute implements Route {
+    public static final String PATH = "/abort";
 
     private final CanaryManager canaryManager;
 
@@ -43,15 +43,16 @@ public class StartCanaryRoute implements Route {
             ));
         }
 
-        if (canary.isRunning()) {
-            return RouteResult.badRequest(String.format("Canary '%s' is already running", canaryId));
+        if (!canary.isRunning()) {
+            return RouteResult.badRequest(String.format("Canary '%s' is not running", canaryId));
         }
 
-        LOGGER.info("Starting canary '{}'", canaryId);
-        CanaryState newState = canary.start(canaryManager);
+        LOGGER.info("Aborting canary '{}'", canaryId);
+        CanaryState newState = canary.abort();
 
-        return RouteResult.ok(new StartCanaryDto(
-            canaryId.getId(), newState.getStatus().toString(), newState.getWeight()
+        return RouteResult.ok(new AbortCanaryDto(
+            canaryId.getId(), newState.getStatus().toString(), newState.getStatus().getBackendColor().toString()
         ));
+
     }
 }

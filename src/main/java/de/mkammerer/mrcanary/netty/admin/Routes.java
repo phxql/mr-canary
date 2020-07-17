@@ -1,5 +1,6 @@
 package de.mkammerer.mrcanary.netty.admin;
 
+import de.mkammerer.mrcanary.netty.admin.route.impl.AbortCanaryRoute;
 import de.mkammerer.mrcanary.netty.admin.route.impl.CanariesRoute;
 import de.mkammerer.mrcanary.netty.admin.route.impl.DefaultRoute;
 import de.mkammerer.mrcanary.netty.admin.route.impl.StartCanaryRoute;
@@ -13,4 +14,5 @@ class Routes {
     StatusRoute statusRoute;
     CanariesRoute canariesRoute;
     StartCanaryRoute startCanaryRoute;
+    AbortCanaryRoute abortCanaryRoute;
 }

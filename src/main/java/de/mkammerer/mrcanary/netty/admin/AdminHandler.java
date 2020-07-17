@@ -6,6 +6,7 @@ import de.mkammerer.mrcanary.netty.NettyHelper;
 import de.mkammerer.mrcanary.netty.admin.route.QueryString;
 import de.mkammerer.mrcanary.netty.admin.route.Route;
 import de.mkammerer.mrcanary.netty.admin.route.RouteResult;
+import de.mkammerer.mrcanary.netty.admin.route.impl.AbortCanaryRoute;
 import de.mkammerer.mrcanary.netty.admin.route.impl.CanariesRoute;
 import de.mkammerer.mrcanary.netty.admin.route.impl.StartCanaryRoute;
 import de.mkammerer.mrcanary.netty.admin.route.impl.StatusRoute;
@@ -55,6 +56,8 @@ public class AdminHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
                 return execRoute(routes.getStatusRoute(), request, queryString);
             case StartCanaryRoute.PATH:
                 return execRoute(routes.getStartCanaryRoute(), request, queryString);
+            case AbortCanaryRoute.PATH:
+                return execRoute(routes.getAbortCanaryRoute(), request, queryString);
             default:
                 return execRoute(routes.getDefaultRoute(), request, queryString);
         }

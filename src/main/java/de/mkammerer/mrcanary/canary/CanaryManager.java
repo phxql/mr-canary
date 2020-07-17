@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -28,7 +29,6 @@ public class CanaryManager {
         this.scheduler = scheduler;
 
         logCanaries();
-        registerAnalysisCallbacks();
     }
 
     private static Map<CanaryId, Canary> groupCanaries(List<Canary> canaries) {
@@ -48,21 +48,6 @@ public class CanaryManager {
         }
     }
 
-    private void registerAnalysisCallbacks() {
-        for (Canary canary : canaries.values()) {
-            long analysisIntervalInSeconds = canary.getAnalysisInterval().toSeconds();
-
-            Runnable job = () -> {
-                try {
-                    analyseCanary(canary);
-                } catch (RuntimeException e) {
-                    LOGGER.warn("Exception in scheduled job", e);
-                }
-            };
-            scheduler.scheduleWithFixedDelay(job, analysisIntervalInSeconds, analysisIntervalInSeconds, TimeUnit.SECONDS);
-        }
-    }
-
     /**
      * Is called by the scheduler when it's time to analyse the canary.
      *
@@ -75,6 +60,27 @@ public class CanaryManager {
 
         LOGGER.info("Analysing canary '{}'", canary.getId());
         canary.analyze();
+    }
+
+    public AnalysisJob scheduleAnalyzeJob(Canary canary) {
+        Runnable runnable = () -> {
+            try {
+                analyseCanary(canary);
+            } catch (RuntimeException e) {
+                LOGGER.warn("Exception in scheduled job for canary '{}'", canary.getId(), e);
+            }
+        };
+        long analysisIntervalInSeconds = canary.getAnalysisInterval().toSeconds();
+        LOGGER.debug("Scheduling analysis job every {} for canary '{}'", canary.getAnalysisInterval(), canary.getId());
+        ScheduledFuture<?> job = scheduler.scheduleWithFixedDelay(runnable, analysisIntervalInSeconds, analysisIntervalInSeconds, TimeUnit.SECONDS);
+
+        // return the job to the caller so it can be stopped
+        return () -> stopAnalyseJob(canary, job);
+    }
+
+    private void stopAnalyseJob(Canary canary, ScheduledFuture<?> job) {
+        LOGGER.debug("Stopping analysis job for canary '{}'", canary.getId());
+        job.cancel(true);
     }
 
     public Collection<Canary> getCanaries() {
