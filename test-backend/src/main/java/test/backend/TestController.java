@@ -41,6 +41,7 @@ class TestController {
 
         LOGGER.info("{}: Success", applicationName);
         meterRegistry.counter("test_backend_success", "name", applicationName).increment();
+        meterRegistry.counter("test_backend_total", "name", applicationName).increment();
         return applicationName;
     }
 
@@ -48,6 +49,7 @@ class TestController {
     public HttpResponse<String> handleFailureException() {
         LOGGER.info("{}: Failure", applicationName);
         meterRegistry.counter("test_backend_failure", "name", applicationName).increment();
-        return HttpResponse.serverError();
+        meterRegistry.counter("test_backend_total", "name", applicationName).increment();
+        return HttpResponse.serverError("Boom: " + applicationName);
     }
 }

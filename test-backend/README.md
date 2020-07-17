@@ -22,14 +22,15 @@ curl localhost:2020
 
 In 50% of the time the request fails with a 500 (configured via `-Dservice.failure-percentage=50`).
 
-The service also exposes Prometheus metrics on `localhost:2020/prometheus`. There are two metrics named
-`test_backend_success` and `test_backend_failure`, both tagged with the application name (configured via 
-`-Dmicronaut.application.name=blue`).
+The service also exposes Prometheus metrics on `localhost:2020/prometheus`. There are counters named
+`test_backend_success`, `test_backend_failure` and `test_backend_total`, all tagged with the application name 
+(configured via `-Dmicronaut.application.name=blue`).
 
 Example:
 
 ```
-curl -s localhost:2020/prometheus | grep ^test_backend                                                                                                                                                     1 ↵
-test_backend_success_total{name="blue",} 4.0
-test_backend_failure_total{name="blue",} 5.0
+curl -s localhost:2020/prometheus | grep ^test_backend
+test_backend_success_total{name="blue",} 7.0
+test_backend_failure_total{name="blue",} 4.0
+test_backend_total{name="blue",} 11.0
 ```

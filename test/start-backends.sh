@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Runs two test backend. The one on 2020 responds with "blue", the one on 3030 responds with "green"
 # Both expose prometheus metrics on /prometheus
