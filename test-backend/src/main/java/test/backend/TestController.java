@@ -39,14 +39,14 @@ class TestController {
             throw new FailureException();
         }
 
-        LOGGER.info("Success");
+        LOGGER.info("{}: Success", applicationName);
         meterRegistry.counter("test_backend_success", "name", applicationName).increment();
         return applicationName;
     }
 
     @Error(exception = FailureException.class)
     public HttpResponse<String> handleFailureException() {
-        LOGGER.info("Failure");
+        LOGGER.info("{}: Failure", applicationName);
         meterRegistry.counter("test_backend_failure", "name", applicationName).increment();
         return HttpResponse.serverError();
     }
