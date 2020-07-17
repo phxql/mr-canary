@@ -1,0 +1,18 @@
+micronaut:
+  application:
+    name: test-backend
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+        descriptions: true
+        step: PT1M
+    enabled: true
+    sensitive: false
+endpoints:
+  prometheus:
+    sensitive: false
+
+service:
+  failure-percentage: 50
+
