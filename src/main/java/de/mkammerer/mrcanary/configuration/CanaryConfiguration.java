@@ -43,6 +43,19 @@ public class CanaryConfiguration {
      */
     WeightConfiguration weight;
 
+    public InetSocketAddress getAddress(Color color) {
+        switch (color) {
+            case BLUE:
+                return blueAddress;
+            case GREEN:
+                return greenAddress;
+            case SHIFTING:
+                throw new IllegalArgumentException("Can't get address for color " + Color.SHIFTING);
+            default:
+                throw new IllegalStateException("Unexpected value: " + color);
+        }
+    }
+
     @Value
     public static class WeightConfiguration {
         /**

@@ -49,23 +49,15 @@ public class Canary {
     public InetSocketAddress getBackend() {
         CanaryState state = getState();
 
-        switch (state.getStatus().getBackendColor()) {
-            case BLUE:
-                return configuration.getBlueAddress();
-            case GREEN:
-                return configuration.getGreenAddress();
-            case SHIFTING:
-                if (state.getStatus() == Status.SHIFT_TO_BLUE) {
-                    return castDice(state.getWeight(), configuration.getGreenAddress(), configuration.getBlueAddress());
-                } else if (state.getStatus() == Status.SHIFT_TO_GREEN) {
-                    return castDice(state.getWeight(), configuration.getBlueAddress(), configuration.getGreenAddress());
-                } else {
-                    throw new IllegalStateException("Unexpected value: " + state.getStatus());
-                }
-
-            default:
-                throw new IllegalStateException("Unexpected value: " + state.getStatus().getBackendColor());
+        if (!state.getStatus().isRunning()) {
+            Color backendColor = state.getStatus().getBackendColor();
+            return configuration.getAddress(backendColor);
         }
+
+        Color primaryColor = state.getStatus().getPrimaryColor();
+        Color canaryColor = state.getStatus().getCanaryColor();
+
+        return castDice(state.getWeight(), configuration.getAddress(primaryColor), configuration.getAddress(canaryColor));
     }
 
     public CanaryState getState() {
@@ -75,16 +67,16 @@ public class Canary {
     public boolean isRunning() {
         Status status = getState().getStatus();
 
-        return status == Status.SHIFT_TO_BLUE || status == Status.SHIFT_TO_GREEN;
+        return status.isRunning();
     }
 
     public void analyze() {
-        if (!isRunning()) {
+        Status status = getState().getStatus();
+        if (!status.isRunning()) {
             throw new IllegalStateException(String.format("Can't analyze, as canary '%s' isn't running", canaryId));
         }
 
-        Status status = getState().getStatus();
-        Color canaryColor = getCanaryColor(status);
+        Color canaryColor = status.getCanaryColor();
         String query = configuration.getPrometheus().getQueryForColor(canaryColor);
 
         LOGGER.debug("Querying {} prometheus for canary '{}'", canaryColor, canaryId);
@@ -96,28 +88,11 @@ public class Canary {
     public CanaryState start(CanaryManager canaryManager) {
         CanaryState state = getState();
 
-        Status newStatus;
-        switch (state.getStatus()) {
-            case SHIFT_TO_BLUE:
-            case SHIFT_TO_GREEN:
-                // Canary is already running
-                throw new IllegalStateException(String.format("Canary '%s' is already running", canaryId));
-            case INIT_BLUE:
-            case FAILED_BLUE:
-            case SUCCESS_BLUE:
-                // Current backend is blue -> shift to green
-                newStatus = Status.SHIFT_TO_GREEN;
-                break;
-            case INIT_GREEN:
-            case FAILED_GREEN:
-            case SUCCESS_GREEN:
-                // Current backend is green -> shift to blue
-                newStatus = Status.SHIFT_TO_BLUE;
-                break;
-            default:
-                throw new IllegalStateException("Unexpected value: " + state.getStatus());
+        if (state.getStatus().isRunning()) {
+            throw new IllegalStateException(String.format("Canary '%s' is already running", canaryId));
         }
 
+        Status newStatus = state.getStatus().getStartStatus();
         LOGGER.info("Starting canary '{}'. State changed: {} -> {}", canaryId, state.getStatus(), newStatus);
 
         CanaryState newState = defaultState.withStatus(newStatus);
@@ -132,25 +107,11 @@ public class Canary {
     public CanaryState abort() {
         CanaryState state = getState();
 
-        Status newStatus;
-        switch (state.getStatus()) {
-            case INIT_BLUE:
-            case INIT_GREEN:
-            case SUCCESS_BLUE:
-            case SUCCESS_GREEN:
-            case FAILED_BLUE:
-            case FAILED_GREEN:
-                throw new IllegalStateException(String.format("Unable to abort: canary '%s' isn't running", canaryId));
-            case SHIFT_TO_BLUE:
-                newStatus = Status.FAILED_GREEN;
-                break;
-            case SHIFT_TO_GREEN:
-                newStatus = Status.FAILED_BLUE;
-                break;
-            default:
-                throw new IllegalStateException("Unexpected value: " + state);
+        if (!state.getStatus().isRunning()) {
+            throw new IllegalStateException(String.format("Canary '%s' isn't running", canaryId));
         }
 
+        Status newStatus = state.getStatus().getAbortStatus();
         LOGGER.info("Aborting canary '{}'. State changed: {} -> {}", canaryId, state.getStatus(), newStatus);
 
         CanaryState newState = defaultState.withStatus(newStatus);
@@ -179,17 +140,6 @@ public class Canary {
         }
 
         return primary;
-    }
-
-    private Color getCanaryColor(Status status) {
-        switch (status) {
-            case SHIFT_TO_BLUE:
-                return Color.BLUE;
-            case SHIFT_TO_GREEN:
-                return Color.GREEN;
-            default:
-                throw new IllegalStateException("Unexpected value: " + status);
-        }
     }
 
     private void handleAnalysisResult(@Nullable Long result, @Nullable Throwable throwable) {
@@ -244,42 +194,26 @@ public class Canary {
         if (state.getWeight() > configuration.getWeight().getEnd()) {
             state = canarySucceeded(state);
         } else {
-            LOGGER.info("Routing {}% of traffic to {} for canary '{}'", state.getWeight(), getCanaryColor(state.getStatus()), canaryId);
+            LOGGER.info("Routing {}% of traffic to {} for canary '{}'", state.getWeight(), state.getStatus().getCanaryColor(), canaryId);
         }
 
         setState(state);
     }
 
     private CanaryState canarySucceeded(CanaryState state) {
-        if (state.getStatus() == Status.SHIFT_TO_BLUE) {
-            // Success while shifting to blue results in blue backend used
-            state = state.withStatus(Status.SUCCESS_BLUE);
-        } else if (state.getStatus() == Status.SHIFT_TO_GREEN) {
-            // Success while shifting to green results in green backend used
-            state = state.withStatus(Status.SUCCESS_GREEN);
-        } else {
-            throw new IllegalStateException(String.format("Unexpected status while handling canary failure: %s", state.getStatus()));
-        }
+        CanaryState newState = state.withStatus(state.getStatus().getSuccessStatus());
 
-        LOGGER.info("Canary '{}' success. Routing all traffic to {} from now on", canaryId, state.getStatus().getBackendColor());
+        LOGGER.info("Canary '{}' success. Routing all traffic to {} from now on", canaryId, newState.getStatus().getBackendColor());
         stopAnalysisJob();
-        return state;
+        return newState;
     }
 
     private CanaryState canaryFailed(CanaryState state) {
-        if (state.getStatus() == Status.SHIFT_TO_BLUE) {
-            // Failure while shifting to blue results in green backend used
-            state = state.withStatus(Status.FAILED_GREEN);
-        } else if (state.getStatus() == Status.SHIFT_TO_GREEN) {
-            // Failure while shifting to green results in blue backend used
-            state = state.withStatus(Status.FAILED_BLUE);
-        } else {
-            throw new IllegalStateException(String.format("Unexpected status while handling canary failure: %s", state.getStatus()));
-        }
+        CanaryState newState = state.withStatus(state.getStatus().getFailureStatus());
 
-        LOGGER.info("Canary '{}' failed. Routing all traffic to {} from now on", canaryId, state.getStatus().getBackendColor());
+        LOGGER.info("Canary '{}' failed. Routing all traffic to {} from now on", canaryId, newState.getStatus().getBackendColor());
         stopAnalysisJob();
-        return state;
+        return newState;
     }
 
     private void setState(CanaryState newState) {
