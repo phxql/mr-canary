@@ -83,8 +83,8 @@ public class TomlConfigurationLoader implements ConfigurationLoader {
     }
 
     private CanaryConfiguration.PrometheusConfiguration parsePrometheus(Toml toml) {
-        URI blueUri = URI.create(toml.getString("prometheus.blue"));
-        URI greenUri = URI.create(toml.getString("prometheus.green"));
+        URI blueUri = URI.create(toml.getString("prometheus.blue_uri"));
+        URI greenUri = URI.create(toml.getString("prometheus.green_uri"));
         String blueQuery = toml.getString("prometheus.blue_query");
         String greenQuery = toml.getString("prometheus.green_query");
         Long min = toml.getLong("prometheus.min");

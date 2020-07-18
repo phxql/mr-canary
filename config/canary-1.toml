@@ -7,11 +7,13 @@ max_failures = 3
 analysis_interval = "PT3S"
 
 [prometheus]
-blue = "http://127.0.0.1:9090"
-green = "http://127.0.0.1:9090"
-blue_query = "TODO - blue"
-green_query = "TODO - green"
-max = 10
+blue_uri = "http://127.0.0.1:9090"
+green_uri = "http://127.0.0.1:9090"
+# Both queries calculate the percentage of successful requests
+blue_query = "rate(test_backend_success_total{name=\"blue\"}[1m]) / rate(test_backend_total{name=\"blue\"}[1m])"
+green_query = "rate(test_backend_success_total{name=\"green\"}[1m]) / rate(test_backend_total{name=\"green\"}[1m])"
+# Success rate must be >= 95
+min = 95
 
 [weight]
 start = 0
