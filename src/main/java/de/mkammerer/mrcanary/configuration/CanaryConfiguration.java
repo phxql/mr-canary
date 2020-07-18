@@ -6,6 +6,7 @@ import lombok.Value;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.time.Duration;
 
 @Value
@@ -74,6 +75,14 @@ public class CanaryConfiguration {
 
     @Value
     public static class PrometheusConfiguration {
+        /**
+         * URI of the prometheus which holds the blue metrics.
+         */
+        URI blueUri;
+        /**
+         * URI of the prometheus which holds the green metrics.
+         */
+        URI greenUri;
         /**
          * Query for the blue system to send to prometheus.
          */

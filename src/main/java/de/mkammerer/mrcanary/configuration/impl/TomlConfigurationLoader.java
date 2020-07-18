@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -82,12 +83,14 @@ public class TomlConfigurationLoader implements ConfigurationLoader {
     }
 
     private CanaryConfiguration.PrometheusConfiguration parsePrometheus(Toml toml) {
+        URI blueUri = URI.create(toml.getString("prometheus.blue"));
+        URI greenUri = URI.create(toml.getString("prometheus.green"));
         String blueQuery = toml.getString("prometheus.blue_query");
         String greenQuery = toml.getString("prometheus.green_query");
         Long min = toml.getLong("prometheus.min");
         Long max = toml.getLong("prometheus.max");
 
-        return new CanaryConfiguration.PrometheusConfiguration(blueQuery, greenQuery, min, max);
+        return new CanaryConfiguration.PrometheusConfiguration(blueUri, greenUri, blueQuery, greenQuery, min, max);
     }
 
     private InetSocketAddress parseAddress(String address) {
