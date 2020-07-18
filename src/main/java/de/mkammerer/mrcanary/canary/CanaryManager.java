@@ -29,6 +29,9 @@ public class CanaryManager {
         this.scheduler = scheduler;
 
         logCanaries();
+
+        // TODO: Disable this!
+        startCanaries();
     }
 
     private static Map<CanaryId, Canary> groupCanaries(List<Canary> canaries) {
@@ -37,6 +40,12 @@ public class CanaryManager {
             result.put(canary.getId(), canary);
         }
         return Collections.unmodifiableMap(result);
+    }
+
+    private void startCanaries() {
+        for (Canary canary : canaries.values()) {
+            canary.start(this);
+        }
     }
 
     private void logCanaries() {

@@ -16,7 +16,7 @@ import de.mkammerer.mrcanary.netty.admin.route.impl.DefaultRoute;
 import de.mkammerer.mrcanary.netty.admin.route.impl.StartCanaryRoute;
 import de.mkammerer.mrcanary.netty.admin.route.impl.StatusRoute;
 import de.mkammerer.mrcanary.prometheus.Prometheus;
-import de.mkammerer.mrcanary.prometheus.impl.PrometheusMock;
+import de.mkammerer.mrcanary.prometheus.impl.NettyPrometheus;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
@@ -58,7 +58,7 @@ public final class Main {
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
-            Prometheus prometheus = new PrometheusMock(0, 20);
+            Prometheus prometheus = new NettyPrometheus(workerGroup);
             CanaryStateManager canaryStateManager = new InMemoryCanaryStateManager();
             CanaryManager canaryManager = CanaryManager.fromConfiguration(globalConfiguration.getCanaries(), workerGroup, prometheus, canaryStateManager);
             Routes routes = new Routes(

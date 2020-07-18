@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
@@ -77,11 +78,12 @@ public class Canary {
         }
 
         Color canaryColor = status.getCanaryColor();
-        String query = configuration.getPrometheus().getQueryForColor(canaryColor);
+        URI prometheusUri = configuration.getPrometheus().getUriForColor(canaryColor);
+        String prometheusQuery = configuration.getPrometheus().getQueryForColor(canaryColor);
 
         LOGGER.debug("Querying {} prometheus for canary '{}'", canaryColor, canaryId);
-        LOGGER.debug("Query: '{}'", query);
-        CompletableFuture<Long> future = prometheus.evaluate(query);
+        LOGGER.debug("Query: '{}'", prometheusQuery);
+        CompletableFuture<Long> future = prometheus.evaluate(prometheusUri, prometheusQuery);
         future.whenComplete(this::handleAnalysisResult);
     }
 

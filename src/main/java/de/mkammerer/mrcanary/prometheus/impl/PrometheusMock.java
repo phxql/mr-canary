@@ -3,6 +3,7 @@ package de.mkammerer.mrcanary.prometheus.impl;
 import de.mkammerer.mrcanary.prometheus.Prometheus;
 import lombok.RequiredArgsConstructor;
 
+import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -12,7 +13,7 @@ public class PrometheusMock implements Prometheus {
     private final long max;
 
     @Override
-    public CompletableFuture<Long> evaluate(String query) {
+    public CompletableFuture<Long> evaluate(URI uri, String query) {
         return CompletableFuture.completedFuture(ThreadLocalRandom.current().nextLong(min, max + 1));
     }
 }

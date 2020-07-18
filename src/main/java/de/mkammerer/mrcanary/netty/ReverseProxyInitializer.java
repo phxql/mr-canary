@@ -20,7 +20,7 @@ public class ReverseProxyInitializer extends ChannelInitializer<SocketChannel> {
     public void initChannel(SocketChannel ch) {
         long id = idGenerator.getAndIncrement();
 
-        LOGGER.debug("[{}] Initializing channel", id);
+        LOGGER.trace("[{}] Initializing channel", id);
         ch.pipeline().addLast(new FrontendHandler(id, canary));
     }
 }

@@ -39,7 +39,7 @@ public class BackendHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        LOGGER.debug("[{}] Disconnecting frontend", id);
+        LOGGER.trace("[{}] Disconnecting frontend", id);
         NettyHelper.flushAndClose(frontendChannel);
     }
 

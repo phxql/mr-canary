@@ -100,6 +100,19 @@ public class CanaryConfiguration {
          */
         @Nullable Long max;
 
+        public URI getUriForColor(Color color) {
+            switch (color) {
+                case BLUE:
+                    return blueUri;
+                case GREEN:
+                    return greenUri;
+                case SHIFTING:
+                    throw new IllegalArgumentException("Can't get uri for color " + Color.SHIFTING);
+                default:
+                    throw new IllegalStateException("Unexpected value: " + color);
+            }
+        }
+
         public String getQueryForColor(Color color) {
             switch (color) {
                 case BLUE:

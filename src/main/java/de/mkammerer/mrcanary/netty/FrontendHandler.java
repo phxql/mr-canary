@@ -25,14 +25,14 @@ public class FrontendHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        LOGGER.debug("[{}] Frontend connected", id);
+        LOGGER.trace("[{}] Frontend connected", id);
 
         ChannelFuture backendConnect = connectToBackend(ctx);
         backendChannel = backendConnect.channel();
 
         backendConnect.addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
-                LOGGER.debug("[{}] Connected to backend", id);
+                LOGGER.trace("[{}] Connected to backend", id);
                 // Start reading from frontend, triggers channelRead()
                 ctx.channel().read();
             } else {
@@ -46,7 +46,7 @@ public class FrontendHandler extends ChannelInboundHandlerAdapter {
     private ChannelFuture connectToBackend(ChannelHandlerContext ctx) {
         InetSocketAddress backend = canary.getBackend();
 
-        LOGGER.debug("[{}] Connecting to backend {}", id, backend);
+        LOGGER.trace("[{}] Connecting to backend {}", id, backend);
 
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.group(ctx.channel().eventLoop())
@@ -86,7 +86,7 @@ public class FrontendHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         if (backendChannel != null) {
-            LOGGER.debug("[{}] Disconnecting backend", id);
+            LOGGER.trace("[{}] Disconnecting backend", id);
             NettyHelper.flushAndClose(backendChannel);
         }
     }
