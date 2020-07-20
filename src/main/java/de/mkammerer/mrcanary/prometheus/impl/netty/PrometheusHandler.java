@@ -57,10 +57,12 @@ public class PrometheusHandler extends SimpleChannelInboundHandler<FullHttpRespo
 
         double prometheusResult = resultParser.parse(body);
         result.complete(prometheusResult);
+        ctx.channel().close();
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         result.completeExceptionally(cause);
+        ctx.channel().close();
     }
 }
