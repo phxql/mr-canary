@@ -53,7 +53,7 @@ public class PrometheusHandler extends SimpleChannelInboundHandler<FullHttpRespo
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpResponse msg) throws Exception {
         LOGGER.debug("Got response from {}", ctx.channel().remoteAddress());
         String body = msg.content().toString(StandardCharsets.UTF_8);
-        LOGGER.debug("Body: {}", body);
+        LOGGER.trace("Body: {}", body);
 
         double prometheusResult = resultParser.parse(body);
         result.complete(prometheusResult);

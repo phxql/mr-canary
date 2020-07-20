@@ -159,11 +159,11 @@ public class Canary {
         boolean success = true;
 
         if (min != null && result < min) {
-            LOGGER.trace("Recording failure, as {} < {}", result, min);
+            LOGGER.debug("Recording failure, as {} < {}", result, min);
             success = false;
         }
         if (max != null && result > max) {
-            LOGGER.trace("Recording failure, as {} > {}", result, max);
+            LOGGER.debug("Recording failure, as {} > {}", result, max);
             success = false;
         }
 
@@ -203,7 +203,7 @@ public class Canary {
     }
 
     private CanaryState canarySucceeded(CanaryState state) {
-        CanaryState newState = state.withStatus(state.getStatus().getSuccessStatus());
+        CanaryState newState = state.withStatus(state.getStatus().getSuccessStatus()).withWeight(configuration.getWeight().getEnd());
 
         LOGGER.info("Canary '{}' success. Routing all traffic to {} from now on", canaryId, newState.getStatus().getBackendColor());
         stopAnalysisJob();

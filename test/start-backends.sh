@@ -24,4 +24,4 @@ java -Xmx32M -Dmicronaut.application.name=blue -Dmicronaut.server.port=2020 -Dse
 PID_BLUE=$!
 
 # Start green on 3030
-java -Xmx32M -Dmicronaut.application.name=green -Dmicronaut.server.port=3030 -Dservice.failure-percentage=50 -jar ../test-backend/target/test-backend-0.1.jar
+java -Xmx32M -Dmicronaut.application.name=green -Dmicronaut.server.port=3030 -Dservice.failure-percentage=1 -jar ../test-backend/target/test-backend-0.1.jar
