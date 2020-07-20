@@ -94,11 +94,11 @@ public class CanaryConfiguration {
         /**
          * Query result minimum value.
          */
-        @Nullable Long min;
+        @Nullable Double min;
         /**
          * Query result maximum value.
          */
-        @Nullable Long max;
+        @Nullable Double max;
 
         public URI getUriForColor(Color color) {
             switch (color) {

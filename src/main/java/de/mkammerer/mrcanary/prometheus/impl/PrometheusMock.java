@@ -13,7 +13,7 @@ public class PrometheusMock implements Prometheus {
     private final long max;
 
     @Override
-    public CompletableFuture<Long> evaluate(URI uri, String query) {
-        return CompletableFuture.completedFuture(ThreadLocalRandom.current().nextLong(min, max + 1));
+    public CompletableFuture<Double> evaluate(URI uri, String query) {
+        return CompletableFuture.completedFuture(ThreadLocalRandom.current().nextDouble(min, max + 1));
     }
 }

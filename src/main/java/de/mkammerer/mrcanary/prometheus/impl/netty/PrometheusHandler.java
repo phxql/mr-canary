@@ -1,5 +1,6 @@
 package de.mkammerer.mrcanary.prometheus.impl.netty;
 
+import de.mkammerer.mrcanary.prometheus.impl.ResultParser;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -20,9 +21,10 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 @Slf4j
 public class PrometheusHandler extends SimpleChannelInboundHandler<FullHttpResponse> {
+    private final ResultParser resultParser;
     private final URI uri;
     private final String query;
-    private final CompletableFuture<Long> result;
+    private final CompletableFuture<Double> result;
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -53,14 +55,12 @@ public class PrometheusHandler extends SimpleChannelInboundHandler<FullHttpRespo
         String body = msg.content().toString(StandardCharsets.UTF_8);
         LOGGER.debug("Body: {}", body);
 
-        // TODO: Extract value from body
-        result.complete(0L);
+        double prometheusResult = resultParser.parse(body);
+        result.complete(prometheusResult);
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        super.exceptionCaught(ctx, cause);
-
         result.completeExceptionally(cause);
     }
 }

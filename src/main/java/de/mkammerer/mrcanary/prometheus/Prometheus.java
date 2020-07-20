@@ -4,5 +4,5 @@ import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 
 public interface Prometheus {
-    CompletableFuture<Long> evaluate(URI uri, String query);
+    CompletableFuture<Double> evaluate(URI uri, String query);
 }

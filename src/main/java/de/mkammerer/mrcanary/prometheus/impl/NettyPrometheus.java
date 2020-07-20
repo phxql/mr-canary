@@ -15,16 +15,17 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 @Slf4j
 public class NettyPrometheus implements Prometheus {
+    private final ResultParser resultParser;
     private final EventLoopGroup eventLoopGroup;
 
     @Override
-    public CompletableFuture<Long> evaluate(URI uri, String query) {
-        CompletableFuture<Long> result = new CompletableFuture<>();
+    public CompletableFuture<Double> evaluate(URI uri, String query) {
+        CompletableFuture<Double> result = new CompletableFuture<>();
 
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.group(eventLoopGroup)
             .channel(NioSocketChannel.class)
-            .handler(new PrometheusInitializer(uri, query, result));
+            .handler(new PrometheusInitializer(resultParser, uri, query, result));
 
         String host = uri.getHost();
         int port = getPortOrDefault(uri.getPort(), uri.getScheme());

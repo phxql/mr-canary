@@ -83,7 +83,7 @@ public class Canary {
 
         LOGGER.debug("Querying {} prometheus for canary '{}'", canaryColor, canaryId);
         LOGGER.debug("Query: '{}'", prometheusQuery);
-        CompletableFuture<Long> future = prometheus.evaluate(prometheusUri, prometheusQuery);
+        CompletableFuture<Double> future = prometheus.evaluate(prometheusUri, prometheusQuery);
         future.whenComplete(this::handleAnalysisResult);
     }
 
@@ -144,7 +144,7 @@ public class Canary {
         return primary;
     }
 
-    private void handleAnalysisResult(@Nullable Long result, @Nullable Throwable throwable) {
+    private void handleAnalysisResult(@Nullable Double result, @Nullable Throwable throwable) {
         if (throwable != null) {
             LOGGER.warn("Failed to query prometheus for canary '{}'", canaryId, throwable);
             analysisFailed();
@@ -154,8 +154,8 @@ public class Canary {
         assert result != null;
         LOGGER.debug("Prometheus result: {} for canary '{}'", result, canaryId);
 
-        Long min = configuration.getPrometheus().getMin();
-        Long max = configuration.getPrometheus().getMax();
+        Double min = configuration.getPrometheus().getMin();
+        Double max = configuration.getPrometheus().getMax();
         boolean success = true;
 
         if (min != null && result < min) {

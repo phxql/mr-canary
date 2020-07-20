@@ -9,10 +9,10 @@ import java.util.List;
 import java.util.Map;
 
 // See src/test/resources/prometheus for example data
-class ResultParser {
+public class ResultParser {
     private final Gson gson = new Gson();
 
-    double parse(String body) {
+    public double parse(String body) {
         Map<String, Object> json = gson.fromJson(body, mapType());
 
         String status = getString(body, json, "status", "");
