@@ -78,8 +78,8 @@ public class FrontendHandler extends ChannelInboundHandlerAdapter {
                 }
             });
         } else {
-            // TODO: Close connection to frontend?
             LOGGER.warn("[{}] Backend channel isn't active!", id);
+            NettyHelper.flushAndClose(ctx.channel());
         }
     }
 
