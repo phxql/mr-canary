@@ -1,0 +1,56 @@
+{
+  "status": "success",
+  "data": {
+    "resultType": "vector",
+    "result": [
+      {
+        "metric": {
+          "action": "end of minor GC",
+          "cause": "G1 Evacuation Pause",
+          "instance": "localhost:2020",
+          "job": "blue"
+        },
+        "value": [
+          1595061037.344,
+          "0.01694915254237288"
+        ]
+      },
+      {
+        "metric": {
+          "action": "end of minor GC",
+          "cause": "G1 Evacuation Pause",
+          "instance": "localhost:3030",
+          "job": "green"
+        },
+        "value": [
+          1595061037.344,
+          "0.016949439821013917"
+        ]
+      },
+      {
+        "metric": {
+          "action": "end of minor GC",
+          "cause": "Metadata GC Threshold",
+          "instance": "localhost:2020",
+          "job": "blue"
+        },
+        "value": [
+          1595061037.344,
+          "0"
+        ]
+      },
+      {
+        "metric": {
+          "action": "end of minor GC",
+          "cause": "Metadata GC Threshold",
+          "instance": "localhost:3030",
+          "job": "green"
+        },
+        "value": [
+          1595061037.344,
+          "0"
+        ]
+      }
+    ]
+  }
+}

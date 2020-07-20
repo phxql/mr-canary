@@ -1,0 +1,19 @@
+{
+  "status": "success",
+  "data": {
+    "resultType": "vector",
+    "result": [
+      {
+        "metric": {
+          "instance": "localhost:2020",
+          "job": "blue",
+          "name": "blue"
+        },
+        "value": [
+          1595265906.25,
+          "0.41666666666666663"
+        ]
+      }
+    ]
+  }
+}
