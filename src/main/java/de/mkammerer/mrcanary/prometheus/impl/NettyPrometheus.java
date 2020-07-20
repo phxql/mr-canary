@@ -3,6 +3,7 @@ package de.mkammerer.mrcanary.prometheus.impl;
 import de.mkammerer.mrcanary.prometheus.Prometheus;
 import de.mkammerer.mrcanary.prometheus.impl.netty.PrometheusInitializer;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,13 @@ public class NettyPrometheus implements Prometheus {
         String host = uri.getHost();
         int port = getPortOrDefault(uri.getPort(), uri.getScheme());
         LOGGER.debug("Connecting to prometheus at {}:{}", host, port);
-        bootstrap.connect(host, port);
+        ChannelFuture connect = bootstrap.connect(host, port);
+        connect.addListener(future -> {
+            // If connect fails, pass exception to result future
+            if (!future.isSuccess()) {
+                result.completeExceptionally(future.cause());
+            }
+        });
 
         return result;
     }

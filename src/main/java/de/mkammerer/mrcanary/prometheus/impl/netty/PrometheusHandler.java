@@ -56,4 +56,11 @@ public class PrometheusHandler extends SimpleChannelInboundHandler<FullHttpRespo
         // TODO: Extract value from body
         result.complete(0L);
     }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        super.exceptionCaught(ctx, cause);
+
+        result.completeExceptionally(cause);
+    }
 }
