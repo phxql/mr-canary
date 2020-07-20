@@ -22,10 +22,7 @@ public class Canary {
     private final CanaryStateManager canaryStateManager;
     private final AtomicReference<CanaryState> state = new AtomicReference<>();
     private final CanaryState defaultState;
-    /**
-     * Content can be null!
-     */
-    private final AtomicReference<AnalysisJob> analyzeJob = new AtomicReference<>();
+    private final AtomicReference<@Nullable AnalysisJob> analyzeJob = new AtomicReference<>();
 
     public Canary(CanaryConfiguration configuration, Prometheus prometheus, CanaryStateManager canaryStateManager) {
         this.canaryId = configuration.getId();
