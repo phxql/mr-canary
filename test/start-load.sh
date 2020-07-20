@@ -2,4 +2,4 @@
 
 # Uses https://github.com/giltene/wrk2
 
-wrk -c 1 -d 1m -t 1 -R 2 http://localhost:8080/
+wrk --connections 1 --duration 1m --threads 1 --rate 2 --header "Connection: close" http://localhost:8080/
