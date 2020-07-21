@@ -35,9 +35,9 @@ public class AdminHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) throws Exception {
-        LOGGER.debug("Handling request {} {}", msg.method(), msg.uri());
+        LOGGER.trace("Handling request {} {}", msg.method(), msg.uri());
         FullHttpResponse response = handle(msg);
-        LOGGER.debug("Response: {}", response.status());
+        LOGGER.trace("Response: {}", response.status());
 
         response.headers()
             .set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE)
